@@ -1,0 +1,170 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <time.h>
+
+// Constants
+#define WIDTH 20
+#define HEIGHT 10
+#define MAX_LENGTH (WIDTH * HEIGHT)
+#define UP 'w'
+#define DOWN 's'
+#define LEFT 'a'
+#define RIGHT 'd'
+
+// Struct for snake
+typedef struct {
+    int x, y;           // Head position
+    int length;         // Length of the snake
+    int tailX[MAX_LENGTH], tailY[MAX_LENGTH]; // Tail position
+    char direction;     // Current direction of movement
+} Snake;
+
+// Struct for food
+typedef struct {
+    int x, y;           // Position of food
+} Food;
+
+// Function prototypes
+void setup(Snake *snake, Food *food);
+void draw(Snake *snake, Food *food);
+void input(Snake *snake);
+void logic(Snake *snake, Food *food, int *gameOver);
+
+int main() {
+    Snake snake;
+    Food food;
+    int gameOver = 0;
+
+    // Setup game
+    setup(&snake, &food);
+
+    // Main game loop
+    while (!gameOver) {
+        // Draw game
+        draw(&snake, &food);
+
+        // Input from user
+        input(&snake);
+
+        // Game logic
+        logic(&snake, &food, &gameOver);
+
+        // Sleep for a while
+        _sleep(100);
+    }
+
+    // Game over message
+    printf("\nGame Over!\n");
+
+    return 0;
+}
+
+// Function to setup initial game state
+void setup(Snake *snake, Food *food) {
+    snake->x = WIDTH / 2;
+    snake->y = HEIGHT / 2;
+    snake->length = 1;
+    snake->direction = RIGHT;
+
+    food->x = rand() % WIDTH;
+    food->y = rand() % HEIGHT;
+}
+
+// Function to draw game board
+void draw(Snake *snake, Food *food) {
+    system("cls");  // Clear screen
+
+    // Draw top border
+    for (int i = 0; i < WIDTH + 2; i++)
+        printf("#");
+    printf("\n");
+
+    // Draw middle section
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            if (j == 0)
+                printf("#");  // Draw left border
+
+            // Draw snake or food or empty space
+            if (i == snake->y && j == snake->x)
+                printf("O");  // Snake head
+            else if (i == food->y && j == food->x)
+                printf("*");  // Food
+            else {
+                int printTail = 0;
+                for (int k = 0; k < snake->length; k++) {
+                    if (i == snake->tailY[k] && j == snake->tailX[k]) {
+                        printf("o");  // Snake tail
+                        printTail = 1;
+                    }
+                }
+                if (!printTail)
+                    printf(" ");
+            }
+
+            if (j == WIDTH - 1)
+                printf("#");  // Draw right border
+        }
+        printf("\n");
+    }
+
+    // Draw bottom border
+    for (int i = 0; i < WIDTH + 2; i++)
+        printf("#");
+    printf("\n");
+
+    // Display score
+    printf("Score: %d\n", snake->length - 1);
+}
+
+// Function to handle user input
+void input(Snake *snake) {
+    if (_kbhit()) {
+        snake->direction = _getch();
+    }
+}
+
+// Function to update game state
+void logic(Snake *snake, Food *food, int *gameOver) {
+    // Move tail
+    for (int i = snake->length - 1; i > 0; i--) {
+        snake->tailX[i] = snake->tailX[i - 1];
+        snake->tailY[i] = snake->tailY[i - 1];
+    }
+    snake->tailX[0] = snake->x;
+    snake->tailY[0] = snake->y;
+
+    // Move head
+    switch (snake->direction) {
+        case UP:
+            snake->y--;
+            break;
+        case DOWN:
+            snake->y++;
+            break;
+        case LEFT:
+            snake->x--;
+            break;
+        case RIGHT:
+            snake->x++;
+            break;
+    }
+
+    // Collision with wall
+    if (snake->x >= WIDTH || snake->x < 0 || snake->y >= HEIGHT || snake->y < 0)
+        *gameOver = 1;
+
+    // Collision with self
+    for (int i = 0; i < snake->length; i++) {
+        if (snake->x == snake->tailX[i] && snake->y == snake->tailY[i])
+            *gameOver = 1;
+    }
+
+    // Eat food
+    if (snake->x == food->x && snake->y == food->y) {
+        snake->length++;
+        food->x = rand() % WIDTH;
+        food->y = rand() % HEIGHT;
+    }
+}
